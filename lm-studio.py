@@ -116,27 +116,17 @@ if __name__ == "__main__":
     synthesizer = NameSynthesizer(client)
     extractor = NameExtractor(client_)
 
-    dictionary = {}
-    with open('dictionary.csv', mode='r', newline='', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            dictionary[row['name']] = row['syns'].split(',')
-
     with open('ksr.csv', mode='r', newline='', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
-        for row in reader:
-            name, params = extractor.extract_name(row['name'])
-            synonyms = synthesizer.generate_synonyms(name, params)
-            if name in dictionary:
-                existing_syns = set(dictionary[name])
-                new_syns = set(synonyms)
-                updated_syns = list(existing_syns.union(new_syns))
-                dictionary[name] = updated_syns
-            else:
-                dictionary[name] = synonyms
+        reader = list(csv.DictReader(file))
+        total_rows = len(reader)
 
-    with open('dictionary.csv', mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.DictWriter(file, fieldnames=['name', 'syns'])
-        writer.writeheader()
-        for name, syns in dictionary.items():
-            writer.writerow({'name': name, 'syns': ','.join(syns)})
+        with open('dictionary.csv', mode='w', newline='', encoding='utf-8') as outfile:
+            writer = csv.DictWriter(outfile, fieldnames=['name', 'syns'])
+            writer.writeheader()
+
+            for index, row in enumerate(reader):
+                name, params = extractor.extract_name(row['name'])
+                synonyms = synthesizer.generate_synonyms(name, params)
+
+                writer.writerow({'name': name, 'syns': ','.join(synonyms)})
+                print(f'Processing {index + 1}/{total_rows}')
