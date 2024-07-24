@@ -112,8 +112,9 @@ class NameExtractor:
 
 if __name__ == "__main__":
     client = LMStudioClient()
+    client_ = LMStudioClient()
     synthesizer = NameSynthesizer(client)
-    extractor = NameExtractor(client)
+    extractor = NameExtractor(client_)
 
     dictionary = {}
     with open('dictionary.csv', mode='r', newline='', encoding='utf-8') as file:
