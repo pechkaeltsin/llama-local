@@ -83,3 +83,4 @@ fairscale
 fire
 tiktoken
 blobfile
+pandas

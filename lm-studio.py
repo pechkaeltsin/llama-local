@@ -120,6 +120,12 @@ if __name__ == "__main__":
         reader = list(csv.DictReader(file))
         total_rows = len(reader)
 
+        dictionary = {}
+        with open('dictionary.csv', mode='r', newline='', encoding='utf-8') as infile:
+            csv_reader = csv.DictReader(infile)
+            for row in csv_reader:
+                dictionary[row['name']] = row['syns'].split(',')
+
         with open('dictionary.csv', mode='w', newline='', encoding='utf-8') as outfile:
             writer = csv.DictWriter(outfile, fieldnames=['name', 'syns'])
             writer.writeheader()
@@ -128,5 +134,11 @@ if __name__ == "__main__":
                 name, params = extractor.extract_name(row['name'])
                 synonyms = synthesizer.generate_synonyms(name, params)
 
-                writer.writerow({'name': name, 'syns': ','.join(synonyms)})
+                if name in dictionary:
+                    unique_synonyms = list(set(dictionary[name] + synonyms))
+                else:
+                    unique_synonyms = list(set(synonyms))
+
+                dictionary[name] = unique_synonyms
+                new_raw = writer.writerow({'name': name, 'syns': ','.join(unique_synonyms)})
                 print(f'Processing {index + 1}/{total_rows}')
