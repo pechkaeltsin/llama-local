@@ -136,5 +136,44 @@ def process_files():
             dict_writer.writerow({'name': name, 'syns': ','.join(sorted(syns))})
 
 
+def extract_and_save():
+    client = LMStudioClient()
+    with open('src/ksr.csv', 'r', newline='', encoding='utf-8') as infile, \
+         open('src/extracted.csv', 'w', newline='', encoding='utf-8') as outfile:
+        reader = list(csv.DictReader(infile))
+        total = len(reader)
+        writer = csv.DictWriter(outfile, fieldnames=['name', 'params'])
+        writer.writeheader()
+        for i, row in enumerate(reader):
+            print(row['name'])
+            name, params = extract_name(client, row['name'])
+            print(bcolors.RED + name + ' ' + bcolors.ENDC + bcolors.BLUE + params + bcolors.ENDC)
+            writer.writerow({'name': name, 'params': params})
+            print(f"Processed {i+1}/{total} entries in extraction\n")
+
+
+def generate_and_save_synonyms():
+    client = LMStudioClient()
+    dictionary = {}
+    with open('src/extracted.csv', 'r', newline='', encoding='utf-8') as infile:
+        reader = list(csv.DictReader(infile))
+        total = len(reader)
+        for i, row in enumerate(reader):
+            synonyms = generate_synonyms(client, row['name'], row['params'])
+            if row['name'] in dictionary:
+                dictionary[row['name']].update(set(synonyms))
+            else:
+                dictionary[row['name']] = set(synonyms)
+            print(f"Processed {i+1}/{total} entries in synonym generation")
+
+    with open('src/dictionary.csv', 'w', newline='', encoding='utf-8') as outfile:
+        writer = csv.DictWriter(outfile, fieldnames=['name', 'syns'])
+        writer.writeheader()
+        for name, syns in dictionary.items():
+            writer.writerow({'name': name, 'syns': ','.join(sorted(syns))})
+
+
 if __name__ == "__main__":
-    process_files()
+    extract_and_save()
+    # generate_and_save_synonyms()
+
