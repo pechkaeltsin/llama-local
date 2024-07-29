@@ -2,7 +2,7 @@ import requests
 
 
 def generate_text(prompt):
-    url = 'http://10.0.50.2:5000/generate'
+    url = 'http://10.0.50.2:5000/generate/{system}/{human}'
     data = {'prompt': prompt}
     response = requests.post(url, json=data)
 

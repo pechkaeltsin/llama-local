@@ -76,14 +76,17 @@ class NameExtractor:
            - Наименование определяется как первое существительное в строке, которое является самостоятельным и может описывать товар без дополнительных уточнений.
            - Наименование не должно содержать прилагательные или другие модификаторы, которые уточняют его свойства (например, материал, цвет, размер).
            - Пропустить любые слова, являющиеся прилагательными или частями сложных наименований, если они не представляют собой наиболее общее описание товара.
+           - Привести наименование из name к единственному числу (например: "листы" ПРИВЕСТИ К "лист")
         
         2. Определить параметры товара:
            - После выделения наименования, все остальное в строке рассматривается как параметры товара.
            - Параметры могут включать прилагательные, типы, размеры, материалы и другие характеристики товара.
+           - Привести параметры из params к единственному числу (например: "хризотилцементные плоские прессованные, толщина 8 мм" ПРИВЕСТИ К "хризотилцементный плоский прессованный, толщина 8 мм")
+           
         
         Формат вывода: JSON объект с двумя ключами в ОДНУ СТРОКУ без переносов:
-        - "name": одно слово.
-        - "params": строка с параметрами товара.
+        - "name": одно слово в единственном числе.
+        - "params": строка с параметрами товара в единственном числе.
         
         Пример работы:
         Входная строка: "Натриевая соль 2-метил 4-хлорфенокси-уксусной кислоты (2м-4х)"
@@ -91,7 +94,7 @@ class NameExtractor:
         { "name": "соль", "params": "Натриевая 2-метил 4-хлорфенокси-уксусной кислоты (2м-4х)" }
         Входная строка: "Листы хризотилцементные плоские прессованные, толщина 8 мм"
         Ожидаемый вывод: 
-        { "name": "листы", "params": "хризотилцементные плоские прессованные, толщина 8 мм" }
+        { "name": "лист", "params": "хризотилцементный плоский прессованный, толщина 8 мм" }
         
         Требования:
         - Строго следовать инструкциям для извлечения наименования и параметров.
@@ -108,12 +111,7 @@ class NameExtractor:
         return json.loads(response)['name'], json.loads(response)['params'] if response else ('', '')
 
 
-if __name__ == "__main__":
-    client = LMStudioClient()
-    client_ = LMStudioClient()
-    synthesizer = NameSynthesizer(client)
-    extractor = NameExtractor(client_)
-
+def name_extractor(agent):
     with open('ksr.csv', 'r', newline='', encoding='utf-8') as file:
         reader = list(csv.DictReader(file))
         total_rows = len(reader)
@@ -121,10 +119,13 @@ if __name__ == "__main__":
             extracted_writer = csv.DictWriter(extracted_file, fieldnames=['name', 'params'])
             extracted_writer.writeheader()
             for index, row in enumerate(reader):
-                name, params = extractor.extract_name(row['name'].lower())
+                name, params = agent.extract_name(row['name'].lower())
                 extracted_writer.writerow({'name': name, 'params': params})
                 print(f"Extracted {index + 1}/{total_rows} rows")
+                # print(f'name: {name}\nparams: {params}')
 
+
+def name_synthesizer(agent):
     with open('extracted.csv', 'r', newline='', encoding='utf-8') as extracted_file:
         extracted_reader = list(csv.DictReader(extracted_file))
         total_rows = len(extracted_reader)
@@ -134,10 +135,21 @@ if __name__ == "__main__":
             dictionary = {}
             for index, row in enumerate(extracted_reader):
                 name = row['name']
-                synonyms = synthesizer.generate_synonyms(name, row['params'])
+                synonyms = agent.generate_synonyms(name, row['params'])
                 if name in dictionary:
                     dictionary[name].update(synonyms)
                 else:
                     dictionary[name] = set(synonyms)
                 dict_writer.writerow({'name': name, 'syns': ','.join(dictionary[name])})
                 print(f"Updated {index + 1}/{total_rows} rows in dictionary")
+
+
+if __name__ == "__main__":
+    client = LMStudioClient()
+    client_ = LMStudioClient()
+
+    extractor = NameExtractor(client_)
+    synthesizer = NameSynthesizer(client)
+
+    name_extractor(extractor)
+    name_synthesizer(synthesizer)
