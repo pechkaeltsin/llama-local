@@ -1,17 +1,30 @@
-import requests
-import json
 import csv
+import json
+import requests
 
 
 class LMStudioClient:
     def __init__(self, server_url="http://localhost:1234"):
+        """
+        Инициализирует клиента API для взаимодействия с сервером LMStudio.
+        :param server_url: Базовый URL сервера для отправки запросов.
+        """
         self.server_url = server_url
         self.model_endpoint = f"{self.server_url}/v1/chat/completions"
 
     def set_system_prompt(self, system_prompt):
+        """
+        Устанавливает системный запрос (инструкцию), который будет использоваться в диалогах.
+        :param system_prompt: Системный запрос для модели.
+        """
         self.system_prompt = system_prompt
 
     def ask_question(self, question):
+        """
+        Отправляет вопрос модели и возвращает ответ.
+        :param Вопрос, который нужно задать модели.
+        :return: Ответ модели в формате JSON.
+        """
         headers = {'Content-Type': 'application/json'}
         payload = {
             "model": "SanctumAI/Meta-Llama-3-8B-Instruct-GGUF/meta-llama-3-8b-instruct.f16.gguf",
@@ -29,6 +42,11 @@ class LMStudioClient:
 
 class NameSynthesizer:
     def __init__(self, lm_client):
+        """
+        Инициализирует объект, который использует LMStudioClient для генерации синонимов.
+        :param lm_client (LMStudioClient): Экземпляр клиента для отправки запросов к модели.
+        """
+        self.lm_client = lm_client
         system_prompt = """Задача: Сгенерировать список синонимов для заданной строки name, которая обозначает термин или наименование в контексте строительных материалов из строки params.
          
         Шаги выполнения:
@@ -57,10 +75,15 @@ class NameSynthesizer:
         - В качестве ответа ТОЛЬКО JSON.
         - JSON в ТОЛЬКО В ОДНУ строку
         - JSON должен иметь правильную структуру"""
-        self.lm_client = lm_client
         self.lm_client.set_system_prompt(system_prompt)
 
     def generate_synonyms(self, name, params):
+        """
+        Генерирует синонимы для указанного наименования с учетом параметров.
+        :param name: Наименование, для которого нужно сгенерировать синонимы.
+        :param params: Параметры, уточняющие наименование.
+        :return: Список синонимов для наименования.
+        """
         question = '{ "name": "' + name + '", "params": "' + params + '" }'
         response = self.lm_client.ask_question(question)
         return json.loads(response)['syn_names'] if response else []
@@ -68,50 +91,30 @@ class NameSynthesizer:
 
 class NameExtractor:
     def __init__(self, lm_client):
-        system_prompt = """Задача: Разделить строку на наименование и параметры товара.
-
-        Шаги выполнения:
-        
-        1. Определить наименование товара:
-           - Наименование определяется как первое существительное в строке, которое является самостоятельным и может описывать товар без дополнительных уточнений.
-           - Наименование не должно содержать прилагательные или другие модификаторы, которые уточняют его свойства (например, материал, цвет, размер).
-           - Пропустить любые слова, являющиеся прилагательными или частями сложных наименований, если они не представляют собой наиболее общее описание товара.
-           - Привести наименование из name к единственному числу (например: "листы" ПРИВЕСТИ К "лист")
-        
-        2. Определить параметры товара:
-           - После выделения наименования, все остальное в строке рассматривается как параметры товара.
-           - Параметры могут включать прилагательные, типы, размеры, материалы и другие характеристики товара.
-           - Привести параметры из params к единственному числу (например: "хризотилцементные плоские прессованные, толщина 8 мм" ПРИВЕСТИ К "хризотилцементный плоский прессованный, толщина 8 мм")
-           
-        
-        Формат вывода: JSON объект с двумя ключами в ОДНУ СТРОКУ без переносов:
-        - "name": одно слово в единственном числе.
-        - "params": строка с параметрами товара в единственном числе.
-        
-        Пример работы:
-        Входная строка: "Натриевая соль 2-метил 4-хлорфенокси-уксусной кислоты (2м-4х)"
-        Ожидаемый вывод: 
-        { "name": "соль", "params": "Натриевая 2-метил 4-хлорфенокси-уксусной кислоты (2м-4х)" }
-        Входная строка: "Листы хризотилцементные плоские прессованные, толщина 8 мм"
-        Ожидаемый вывод: 
-        { "name": "лист", "params": "хризотилцементный плоский прессованный, толщина 8 мм" }
-        
-        Требования:
-        - Строго следовать инструкциям для извлечения наименования и параметров.
-        - Результаты должны быть точно сформированы в JSON формате.
-        - Обработка должна быть корректной для строк с разной структурой и длиной параметров.
-        - В качестве ответа ТОЛЬКО JSON.
-        - JSON в ТОЛЬКО В ОДНУ строку
-        - JSON должен иметь правильную структуру"""
+        """
+        Инициализирует объект для извлечения наименования и параметров из строки.
+        :param lm_client (LMStudioClient): Экземпляр клиента для отправки запросов к модели.
+        """
         self.lm_client = lm_client
+        system_prompt = ...
         self.lm_client.set_system_prompt(system_prompt)
 
     def extract_name(self, string):
+        """
+        Извлекает наименование и параметры из строки
+        :param string: Строка для обработки
+        :return: Наименование и параметры товара
+        """
         response = self.lm_client.ask_question(string)
         return json.loads(response)['name'], json.loads(response)['params'] if response else ('', '')
 
 
 def name_extractor(agent):
+    """
+    Обрабатывает CSV файл, извлекает из каждой строки наименование и параметры товара,
+    и сохраняет результаты в новый CSV файл.
+    :param agent: Экземпляр класса NameExtractor
+    """
     with open('ksr.csv', 'r', newline='', encoding='utf-8') as file:
         reader = list(csv.DictReader(file))
         total_rows = len(reader)
@@ -126,6 +129,11 @@ def name_extractor(agent):
 
 
 def name_synthesizer(agent):
+    """
+    Читает файл с извлеченными наименованиями и параметрами, генерирует синонимы,
+    и сохраняет их в другой CSV файл.
+    :param agent: Экземпляр класса NameSynthesizer
+    """
     with open('extracted.csv', 'r', newline='', encoding='utf-8') as extracted_file:
         extracted_reader = list(csv.DictReader(extracted_file))
         total_rows = len(extracted_reader)
