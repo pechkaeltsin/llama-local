@@ -63,8 +63,7 @@ class NameSynthesizer:
     def generate_synonyms(self, name, params):
         question = '{ "name": "' + name + '", "params": "' + params + '" }'
         response = self.lm_client.ask_question(question)
-        response_data = json.loads(response)
-        return response_data['syn_names']
+        return json.loads(response)['syn_names'] if response else []
 
 
 class NameExtractor:
@@ -106,8 +105,7 @@ class NameExtractor:
 
     def extract_name(self, string):
         response = self.lm_client.ask_question(string)
-        response_data = json.loads(response)
-        return response_data['name'], response_data['params']
+        return json.loads(response)['name'], json.loads(response)['params'] if response else ('', '')
 
 
 if __name__ == "__main__":
@@ -116,29 +114,30 @@ if __name__ == "__main__":
     synthesizer = NameSynthesizer(client)
     extractor = NameExtractor(client_)
 
-    with open('ksr.csv', mode='r', newline='', encoding='utf-8') as file:
+    with open('ksr.csv', 'r', newline='', encoding='utf-8') as file:
         reader = list(csv.DictReader(file))
         total_rows = len(reader)
-
-        dictionary = {}
-        with open('dictionary.csv', mode='r', newline='', encoding='utf-8') as infile:
-            csv_reader = csv.DictReader(infile)
-            for row in csv_reader:
-                dictionary[row['name']] = row['syns'].split(',')
-
-        with open('dictionary.csv', mode='w', newline='', encoding='utf-8') as outfile:
-            writer = csv.DictWriter(outfile, fieldnames=['name', 'syns'])
-            writer.writeheader()
-
+        with open('extracted.csv', 'w', newline='', encoding='utf-8') as extracted_file:
+            extracted_writer = csv.DictWriter(extracted_file, fieldnames=['name', 'params'])
+            extracted_writer.writeheader()
             for index, row in enumerate(reader):
-                name, params = extractor.extract_name(row['name'])
-                synonyms = synthesizer.generate_synonyms(name, params)
+                name, params = extractor.extract_name(row['name'].lower())
+                extracted_writer.writerow({'name': name, 'params': params})
+                print(f"Extracted {index + 1}/{total_rows} rows")
 
+    with open('extracted.csv', 'r', newline='', encoding='utf-8') as extracted_file:
+        extracted_reader = list(csv.DictReader(extracted_file))
+        total_rows = len(extracted_reader)
+        with open('dictionary.csv', 'w', newline='', encoding='utf-8') as dict_file:
+            dict_writer = csv.DictWriter(dict_file, fieldnames=['name', 'syns'])
+            dict_writer.writeheader()
+            dictionary = {}
+            for index, row in enumerate(extracted_reader):
+                name = row['name']
+                synonyms = synthesizer.generate_synonyms(name, row['params'])
                 if name in dictionary:
-                    unique_synonyms = list(set(dictionary[name] + synonyms))
+                    dictionary[name].update(synonyms)
                 else:
-                    unique_synonyms = list(set(synonyms))
-
-                dictionary[name] = unique_synonyms
-                new_raw = writer.writerow({'name': name, 'syns': ','.join(unique_synonyms)})
-                print(f'Processing {index + 1}/{total_rows}')
+                    dictionary[name] = set(synonyms)
+                dict_writer.writerow({'name': name, 'syns': ','.join(dictionary[name])})
+                print(f"Updated {index + 1}/{total_rows} rows in dictionary")
