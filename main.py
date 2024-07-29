@@ -14,5 +14,5 @@ with open('src/extracted.csv', mode='w', newline='', encoding='utf-8') as file:
 
     for row in tqdm(ksr_data, desc="Processing rows"):
         result = json.loads(chatgpt.ask(row['name']))
-        result.update({'code': row['code'], 'uint': row['uint']})
-        writer.writerow(result)
+        filtered_result = {key: result[key] for key in fieldnames if key in result}
+        writer.writerow(filtered_result)

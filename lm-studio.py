@@ -5,11 +5,11 @@ import csv
 
 class bcolors:
     HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
+    BLUE = '\033[94m'
     OKCYAN = '\033[96m'
     OKGREEN = '\033[92m'
     WARNING = '\033[93m'
-    FAIL = '\033[91m'
+    RED = '\033[91m'
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
@@ -117,10 +117,9 @@ def process_files():
         dictionary = {}
 
         for i, row in enumerate(reader, 1):
-            print(bcolors.UNDERLINE + row['name'] + bcolors.ENDC)
+            print(row['name'])
             name, params = extract_name(client, row['name'])
-            print('name: ' + bcolors.OKBLUE + name + bcolors.ENDC)
-            print('params: ' + bcolors.OKCYAN + params + bcolors.ENDC)
+            print(bcolors.RED + name + ' ' + bcolors.ENDC + bcolors.BLUE + params + bcolors.ENDC)
             synonyms = generate_synonyms(client, name, params)
             print('syns: ' + bcolors.OKGREEN + str(synonyms) + bcolors.ENDC)
 
@@ -128,7 +127,7 @@ def process_files():
                 dictionary[name].update(set(synonyms))
             else:
                 dictionary[name] = set(synonyms)
-            print(f"Processed {i}/{total} rows")
+            print(f"Processed {i}/{total} rows\n")
 
     with open('src/dictionary.csv', 'w', newline='', encoding='utf-8') as dict_file:
         dict_writer = csv.DictWriter(dict_file, fieldnames=['name', 'syns'])
