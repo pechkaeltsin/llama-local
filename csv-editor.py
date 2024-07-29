@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-df = pd.read_csv('base_ksr.csv')
+df = pd.read_csv('src/base_ksr.csv')
 
 df_filtered = df[df['code'].str[0].str.isdigit()]
 
