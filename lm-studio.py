@@ -3,7 +3,7 @@ import json
 import csv
 
 
-class bcolors:
+class BColors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
     OKCYAN = '\033[96m'
@@ -119,9 +119,9 @@ def process_files():
         for i, row in enumerate(reader, 1):
             print(row['name'])
             name, params = extract_name(client, row['name'])
-            print(bcolors.RED + name + ' ' + bcolors.ENDC + bcolors.BLUE + params + bcolors.ENDC)
+            print(BColors.RED + name + ' ' + BColors.ENDC + BColors.BLUE + params + BColors.ENDC)
             synonyms = generate_synonyms(client, name, params)
-            print('syns: ' + bcolors.OKGREEN + str(synonyms) + bcolors.ENDC)
+            print('syns: ' + BColors.OKGREEN + str(synonyms) + BColors.ENDC)
 
             if name in dictionary:
                 dictionary[name].update(set(synonyms))
