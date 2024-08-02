@@ -147,7 +147,7 @@ def extract_and_save():
         for i, row in enumerate(reader):
             print(row['name'])
             name, params = extract_name(client, row['name'])
-            print(bcolors.RED + name + ' ' + bcolors.ENDC + bcolors.BLUE + params + bcolors.ENDC)
+            print(BColors.RED + name + ' ' + BColors.ENDC + BColors.BLUE + params + BColors.ENDC)
             writer.writerow({'name': name, 'params': params})
             print(f"Processed {i+1}/{total} entries in extraction\n")
 
